@@ -33,6 +33,9 @@
 using namespace llvm;
 namespace cp4pp
 {
+    enum MemType{
+        LOAD,STORE
+    };
     enum Token
     {
         TOK_EOF = -1,
@@ -51,20 +54,43 @@ namespace cp4pp
     class ExprAST
     {
     public:
+        MemType mType;
         virtual ~ExprAST() = default;
         virtual Value *codegen() = 0;
         virtual void print() = 0;
+        ExprAST *SetLoad(){
+            mType = LOAD;
+            return this;
+        }
+        ExprAST *SetStore(){
+            mType = STORE;
+            return this;
+        }
     };
     class NumberExprAST : public ExprAST
     {
         int Val;
-
+        Type *type;
     public:
-        NumberExprAST(int Val) : Val(Val) {}
+        NumberExprAST(int Val,Type * type) : Val(Val),type(type) {}
         Value *codegen() override;
         void print() override
         {
             fprintf(stderr, "Number: %d\n", Val);
+        };
+    };
+    class VariableExprAST : public ExprAST
+    {
+        std::string Name;
+
+    public:
+        VariableExprAST(const std::string &Name) : Name(Name) {}
+
+        Value *codegen() override;
+        const std::string &getName() const { return Name; }
+        void print() override
+        {
+            fprintf(stderr, " Variable: %s\n", Name.c_str());
         };
     };
     class ArrayExprAST : public ExprAST
@@ -106,20 +132,18 @@ namespace cp4pp
             fprintf(stderr, "Litera: [%s]\n", Str.c_str());
         };
     };
-    class VariableExprAST : public ExprAST
-    {
-        std::string Name;
-
-    public:
-        VariableExprAST(const std::string &Name) : Name(Name) {}
-
-        Value *codegen() override;
-        const std::string &getName() const { return Name; }
-        void print() override
-        {
-            fprintf(stderr, " Variable: %s\n", Name.c_str());
-        };
-    };
+    // class AsteriskExprAST : public ExprAST
+    // {
+    //     std::unique_ptr<ExprAST> Operand;
+    //     public:
+    //     AsteriskExprAST(std::unique_ptr<ExprAST> Operand):Operand(std::move(Operand)){};
+    // };
+    // class QuoteExprAST : public ExprAST
+    // {
+    //     std::unique_ptr<ExprAST> Operand;
+    //     public:
+    //     QuoteExprAST(std::unique_ptr<ExprAST> Operand):Operand(std::move(Operand)){};
+    // };
     class BinaryExprAST : public ExprAST
     {
         char Op;
@@ -222,15 +246,15 @@ namespace cp4pp
     };
     class VarExprAST : public ExprAST
     {
-        bool isArr;
+        bool isPtr;
         int num;
         Type *type;
         std::pair<std::string, std::unique_ptr<ExprAST>> VarNames;
 
     public:
-        VarExprAST(Type *type,bool isArr,int num,
+        VarExprAST(Type *type,bool isPtr,int num,
                    std::pair<std::string, std::unique_ptr<ExprAST>> VarNames)
-            : type(type),isArr(isArr),num(num), VarNames(std::move(VarNames)) {}
+            : type(type),isPtr(isPtr),num(num), VarNames(std::move(VarNames)) {}
 
         Value *codegen() override;
         void print() override
@@ -242,19 +266,23 @@ namespace cp4pp
     class AssignExprAST : public ExprAST
     {
     public:
-        std::string name;
-        std::unique_ptr<ExprAST> ValExpr;
-
+        std::unique_ptr<ExprAST> LEFT;
+        std::unique_ptr<ExprAST> RIGHT;
     public:
-        AssignExprAST(std::string name, std::unique_ptr<ExprAST> ValExpr)
-            : name(name), ValExpr(std::move(ValExpr)){};
+        AssignExprAST(std::unique_ptr<ExprAST> LEFT,std::unique_ptr<ExprAST> RIGHT)
+            : LEFT(std::move(LEFT)),RIGHT(std::move(RIGHT)){};
         Value *codegen() override;
         void print() override
         {
-            fprintf(stderr, " Assign: %s", name.c_str());
-            ValExpr->print();
+            fprintf(stderr,"Assign: [");
+            LEFT->print();
+            RIGHT->print();
+            fprintf(stderr,"]\n");
         };
     };
+
+    
+
     class PrototypeAST
     {
         std::string Name;
@@ -294,7 +322,6 @@ namespace cp4pp
     {
     public:
         std::unique_ptr<PrototypeAST> Proto;
-        // std::vector<std::unique_ptr<ExprAST>> Body;
         std::unique_ptr<BodyExprAST> Body;
 
     public:
@@ -309,5 +336,4 @@ namespace cp4pp
             Body->print();
         };
     };
-
 }
