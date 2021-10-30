@@ -132,18 +132,32 @@ namespace cp4pp
             fprintf(stderr, "Litera: [%s]\n", Str.c_str());
         };
     };
-    // class AsteriskExprAST : public ExprAST
-    // {
-    //     std::unique_ptr<ExprAST> Operand;
-    //     public:
-    //     AsteriskExprAST(std::unique_ptr<ExprAST> Operand):Operand(std::move(Operand)){};
-    // };
-    // class QuoteExprAST : public ExprAST
-    // {
-    //     std::unique_ptr<ExprAST> Operand;
-    //     public:
-    //     QuoteExprAST(std::unique_ptr<ExprAST> Operand):Operand(std::move(Operand)){};
-    // };
+    class AsteriskExprAST : public ExprAST
+    {
+        std::unique_ptr<ExprAST> Operand;
+        Value *codegen() override;
+        public:
+        AsteriskExprAST(std::unique_ptr<ExprAST> Operand):Operand(std::move(Operand)){};
+        void print() override
+        {
+            fprintf(stderr, "Asterisk[");
+            Operand->print();
+            fprintf(stderr, "]\n");
+        };
+    };
+    class QuoteExprAST : public ExprAST
+    {
+        std::unique_ptr<ExprAST> Operand;
+        Value *codegen() override;
+        public:
+        QuoteExprAST(std::unique_ptr<ExprAST> Operand):Operand(std::move(Operand)){};
+        void print() override
+        {
+            fprintf(stderr, "Quote[");
+            Operand->print();
+            fprintf(stderr, "]\n");
+        };
+    };
     class BinaryExprAST : public ExprAST
     {
         char Op;
@@ -221,7 +235,9 @@ namespace cp4pp
         {
             fprintf(stderr, "IF EXPR[\n");
             Cond->print();
+            fprintf(stderr, "THEN: \n");
             Then->print();
+            fprintf(stderr, "ELSE: \n");
             Else->print();
             fprintf(stderr, "]\n");
         }

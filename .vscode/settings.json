@@ -55,6 +55,8 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "*.def": "cpp"
+        "*.def": "cpp",
+        "cassert": "cpp",
+        "iostream": "cpp"
     }
 }
