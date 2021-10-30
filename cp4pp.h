@@ -50,6 +50,7 @@ namespace cp4pp
         TOK_STRING = -10,
         TOK_STRVAL = -11,
         TOK_INT = -12,
+        TOK_LONG = -13
     };
     class ExprAST
     {
@@ -113,11 +114,12 @@ namespace cp4pp
     {
     public:
         std::string Name;
-        int Num;
-        PointerExprAST(std::string Name, int Num) : Name(Name), Num(Num){};
+        std::unique_ptr<ExprAST> Index;
+        PointerExprAST(std::string Name, std::unique_ptr<ExprAST> Index) : Name(Name), Index(std::move(Index)){};
         Value *codegen() override;
         void print() override{
-            fprintf(stderr,"Pointer[ %s %d ]\n",Name.c_str(), Num);
+            fprintf(stderr,"Pointer[ %s  ]\n",Name.c_str());
+            Index->print();
         };
     };
     class LiteralExprAST : public ExprAST
@@ -263,15 +265,14 @@ namespace cp4pp
     class VarExprAST : public ExprAST
     {
         bool isPtr;
-        int num;
         Type *type;
+        std::unique_ptr<ExprAST> Num;
         std::pair<std::string, std::unique_ptr<ExprAST>> VarNames;
 
     public:
-        VarExprAST(Type *type,bool isPtr,int num,
+        VarExprAST(Type *type,bool isPtr,std::unique_ptr<ExprAST> Num,
                    std::pair<std::string, std::unique_ptr<ExprAST>> VarNames)
-            : type(type),isPtr(isPtr),num(num), VarNames(std::move(VarNames)) {}
-
+            : type(type),isPtr(isPtr),Num(std::move(Num)), VarNames(std::move(VarNames)) {}
         Value *codegen() override;
         void print() override
         {
@@ -302,15 +303,16 @@ namespace cp4pp
     class PrototypeAST
     {
         std::string Name;
+        Type *type;
         std::vector<std::pair<std::string, Token>> Args;
         bool IsOperator;
         unsigned Precedence;
 
     public:
-        PrototypeAST(const std::string &Name, std::vector<std::pair<std::string, Token>> Args,
-                     bool IsOperator = false, unsigned Prec = 0)
+        PrototypeAST(const std::string &Name, std::vector<std::pair<std::string, Token>> Args, 
+            Type *type,bool IsOperator = false, unsigned Prec = 0)
             : Name(Name), Args(std::move(Args)), IsOperator(IsOperator),
-              Precedence(Prec) {}
+              Precedence(Prec), type(type){}
 
         Function *codegen();
         const std::string &getName() const { return Name; }

@@ -1,0 +1,9 @@
+extern write(int,string,int)
+function entry(){
+    string msg = "Make China Great Again!"
+    int len = 0
+    for len = 0;msg[len] != 0:1;len = len + 1{
+        int i = 1
+    }
+    #write(1,msg,len)
+}

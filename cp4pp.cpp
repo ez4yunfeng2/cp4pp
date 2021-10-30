@@ -41,6 +41,8 @@
 #define i32ptr Type::getInt32PtrTy(*TheContext)
 #define i8 Type::getInt8Ty(*TheContext)
 #define i8ptr Type::getInt8PtrTy(*TheContext)
+#define i64 Type::getInt64Ty(*TheContext)
+#define i64ptr Type::getInt64PtrTy(*TheContext)
 using namespace cp4pp;
 using namespace llvm;
 static std::map<char, int> BinopPrecedence;
@@ -81,6 +83,8 @@ static int GetTok()
             return TOK_STRING;
         if (IdentifierStr == "int")
             return TOK_INT;
+        if (IdentifierStr == "long")
+            return TOK_LONG;
         return TOK_IDENTIFIER;
     }
 
@@ -107,8 +111,10 @@ static int GetTok()
             LastChar = getchar();
             if (LastChar == '1')
                 NumVal.first = i8;
-            else
+            else if(LastChar == '4')
                 NumVal.first = i32;
+            else
+                NumVal.first = i64;
             LastChar = getchar();
         }
         return TOK_NUMBER;
@@ -214,10 +220,11 @@ static std::unique_ptr<ExprAST> ParseExpression();
 static bool isKeyWord()
 {
     Token token = (Token)CurTok;
-    return token == TOK_CHAR || token == TOK_STRING || token == TOK_INT;
+    return token == TOK_CHAR || token == TOK_STRING || token == TOK_INT || token == TOK_LONG;
 }
 std::unique_ptr<ExprAST> LogError(const char *Str)
 {
+    debuging
     fprintf(stderr, "Error: %s\n", Str);
     return nullptr;
 }
@@ -269,7 +276,8 @@ static std::unique_ptr<PrototypeAST> ParsePrototype()
     if (CurTok != ')')
         return LogErrorP("未识别到 ')'");
     getNextToken();
-    return std::make_unique<PrototypeAST>(FnName, ArgTypes, 0 != 0, 30);
+    getNextToken();
+    return std::make_unique<PrototypeAST>(FnName, ArgTypes,i32, 0 != 0, 30);
 }
 static std::unique_ptr<PrototypeAST> ParseExtern()
 {
@@ -281,7 +289,7 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr()
 {
     std::string varName = IdentifierStr;
     std::vector<std::unique_ptr<ExprAST>> Args;
-    int index;
+    std::unique_ptr<ExprAST> Index;
     getNextToken();
     std::unique_ptr<ExprAST> valExpr;
     std::unique_ptr<ExprAST> LHS;
@@ -316,10 +324,10 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr()
         getNextToken();
         return std::make_unique<CallExprAST>(varName, std::move(Args));
     case '[':
-        if (getNextToken() != TOK_NUMBER)
-            return LogError("未识别到 数组数量 ");
-        index = NumVal.second;
-        LHS = std::make_unique<PointerExprAST>(varName, index);
+        getNextToken();
+        Index = ParseExpression();
+        if(CurTok != ']') return LogError("数组下标识别错误");
+        LHS = std::make_unique<PointerExprAST>(varName, std::move(Index));
         if (getNextToken() != '=')
             return LHS;
         getNextToken();
@@ -359,6 +367,7 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
     Type *type;
     bool isPtr = false;
     int num = 1;
+    std::unique_ptr<ExprAST> Num = std::make_unique<NumberExprAST>(1,i32);
     switch (tok)
     {
     case TOK_INT:
@@ -371,16 +380,20 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
     case TOK_CHAR:
         type = i8;
         break;
+    case TOK_LONG:
+        type = i64;
+        break;
     default:
-        debuging return LogError("未知参数类型1");
+        debuging
+        return LogError("未知参数类型1");
     }
     if (getNextToken() == '[')
     {
         CurArray.first = type;
         isPtr = true;
-        if (getNextToken() != TOK_NUMBER)
-            return LogError("未知数组数量");
-        num = NumVal.second;
+        getNextToken();
+        Num = ParseExpression();
+        if(CurTok != ']') return LogError("未检测到数组下标结尾");
         CurArray.second = NumVal.second;
         getNextToken();
     }
@@ -399,6 +412,8 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
         case TOK_CHAR:
             type = i8ptr;
             break;
+        case TOK_LONG:
+            type = i64ptr;
         default:
             return LogError("未知参数类型2");
         }
@@ -421,7 +436,7 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
     }
     if (tok == TOK_STRING)
         num = TMPNUM;
-    return std::make_unique<VarExprAST>(std::move(type), isPtr, num, std::make_pair(Name, std::move(Init)));
+    return std::make_unique<VarExprAST>(std::move(type), isPtr,std::move(Num), std::make_pair(Name, std::move(Init)));
 }
 
 static std::unique_ptr<ExprAST> ParseNumberExpr()
@@ -537,6 +552,7 @@ static std::unique_ptr<ExprAST> ParsePrimary()
     case TOK_STRING:
     case TOK_CHAR:
     case TOK_INT:
+    case TOK_LONG:
         return ParseVarExpr();
     case TOK_NUMBER:
         return ParseNumberExpr();
@@ -567,6 +583,12 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec, std::unique_ptr<Expr
         if (TokPrec < ExprPrec)
             return LHS;
         int BinOp = CurTok;
+        if(BinOp == '!' || BinOp == '@'){
+            if(getNextToken() != '='){
+                return LogError("未知二元操作符");
+            } 
+        }
+        
         getNextToken();
         auto RHS = ParsePrimary();
         if (!RHS)
@@ -663,7 +685,7 @@ Value *VariableExprAST::codegen()
 {
     auto V = NamedValues[Name];
     if (!V.second){
-        fprintf(stderr,"Name: %s\n",Name.c_str());
+        fprintf(stderr,"Unknow Name: %s\n",Name.c_str());
         return LogErrorV("未知变量名");
     }
         
@@ -676,11 +698,12 @@ Value *VariableExprAST::codegen()
     default:
         break;
     }
+    fprintf(stderr,"Name: %s\n",Name.c_str());
     return LogErrorV("未知存储类型");
 }
 
 Value *AssignExprAST::codegen()
-{
+{   
     auto LHS = LEFT->SetStore()->codegen();
     auto RHS = RIGHT->SetLoad()->codegen();
     if (!LHS || !RHS)
@@ -758,9 +781,13 @@ Value *BinaryExprAST::codegen()
     case '*':
         return Builder->CreateMul(L, R, "multmp");
     case '<':
-        return Builder->CreateICmpULT(L, R, "cmptmp");
+        return Builder->CreateICmpULT(L, R, "lecmp");
     case '>':
-        return Builder->CreateICmpULT(R, L, "cmptmp");
+        return Builder->CreateICmpULT(R, L, "gecmp");
+    case '!':
+        return Builder->CreateICmpNE(R,L,"necmp");
+    case '@':
+        return Builder->CreateICmpEQ(R,L,"eqcmp");
     default:
         return LogErrorV("未知操作符");
     }
@@ -795,9 +822,10 @@ Value *VarExprAST::codegen()
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
     IRBuilder<> TmpB(&TheFunction->getEntryBlock(),
                      TheFunction->getEntryBlock().begin());
-    Value *arraySize = ConstantInt::get(i32, num);
+    Value *arraySize = Num->codegen();
     AllocaInst *Alloca = TmpB.CreateAlloca(type, arraySize, VarNames.first);
     NamedValues[VarNames.first] = std::make_pair(type, Alloca);
+    fprintf(stderr,"Name Put: %s\n",VarNames.first.c_str());
     Value *val = VarNames.second->SetLoad()->codegen();
     return Builder->CreateStore(val, Alloca);
 }
@@ -811,13 +839,14 @@ Function *FunctionAST::codegen()
         return nullptr;
     BasicBlock *BB = BasicBlock::Create(*TheContext, Proto->getName(), function);
     Builder->SetInsertPoint(BB);
-
+    NamedValues.clear();
     for (auto &arg : function->args())
     {
         IRBuilder<> TmpB(&function->getEntryBlock(),
                          function->getEntryBlock().begin());
         AllocaInst *Alloca = TmpB.CreateAlloca(arg.getType(), nullptr, arg.getName());
-        NamedValues[arg.getName()] = std::make_pair(arg.getType(), Alloca);
+        Builder->CreateStore(&arg,Alloca);
+        NamedValues[std::string(arg.getName())] = std::make_pair(arg.getType(), Alloca);
     }
     Value *ret = Body->codegen();
     verifyFunction(*function);
@@ -858,7 +887,9 @@ Value *ArrayExprAST::codegen()
 Value *PointerExprAST::codegen()
 {
     auto V = NamedValues[Name];
-    Value *index = ConstantInt::get(*TheContext, APInt(32, Num));
+    
+    Value *index = Index->SetLoad()->codegen();
+    if(!index) return nullptr;
     Value *ret;
     auto arrVal = Builder->CreateInBoundsGEP(V.second, index);
     switch (mType)
@@ -870,7 +901,7 @@ Value *PointerExprAST::codegen()
         ret = arrVal;
         break;
     default:
-        return LogErrorV("未知存储类型");
+        return LogErrorV("未知指针存储类型");
     }
     return ret;
 }
@@ -912,13 +943,15 @@ Function *PrototypeAST::codegen()
         case TOK_CHAR:
             type = i8;
             break;
+        case TOK_LONG:
+            type = i64;
         default:
             type = i32;
             break;
         }
         argTypes.push_back(type);
     }
-    FunctionType *FT = FunctionType::get(Type::getDoubleTy(*TheContext), argTypes, false);
+    FunctionType *FT = FunctionType::get(type, argTypes, false);
     Function *F = Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
     unsigned Idx = 0;
     for (auto &Arg : F->args())
@@ -935,6 +968,8 @@ int main(int argc, char **argv)
         open(argv[1], O_RDONLY);
     else
         open("demo.cp4pp", O_RDONLY);
+    BinopPrecedence['@'] = 10;
+    BinopPrecedence['!'] = 10;
     BinopPrecedence['<'] = 10;
     BinopPrecedence['>'] = 10;
     BinopPrecedence['+'] = 20;
