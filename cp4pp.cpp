@@ -111,7 +111,7 @@ static int GetTok()
             LastChar = getchar();
             if (LastChar == '1')
                 NumVal.first = i8;
-            else if(LastChar == '4')
+            else if (LastChar == '4')
                 NumVal.first = i32;
             else
                 NumVal.first = i64;
@@ -225,7 +225,7 @@ static bool isKeyWord()
 std::unique_ptr<ExprAST> LogError(const char *Str)
 {
     debuging
-    fprintf(stderr, "Error: %s\n", Str);
+        fprintf(stderr, "Error: %s\n", Str);
     return nullptr;
 }
 std::unique_ptr<PrototypeAST> LogErrorP(const char *Str)
@@ -277,7 +277,7 @@ static std::unique_ptr<PrototypeAST> ParsePrototype()
         return LogErrorP("未识别到 ')'");
     getNextToken();
     getNextToken();
-    return std::make_unique<PrototypeAST>(FnName, ArgTypes,i32, 0 != 0, 30);
+    return std::make_unique<PrototypeAST>(FnName, ArgTypes, i32, 0 != 0, 30);
 }
 static std::unique_ptr<PrototypeAST> ParseExtern()
 {
@@ -326,7 +326,8 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr()
     case '[':
         getNextToken();
         Index = ParseExpression();
-        if(CurTok != ']') return LogError("数组下标识别错误");
+        if (CurTok != ']')
+            return LogError("数组下标识别错误");
         LHS = std::make_unique<PointerExprAST>(varName, std::move(Index));
         if (getNextToken() != '=')
             return LHS;
@@ -366,8 +367,7 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
     Token tok = (Token)CurTok;
     Type *type;
     bool isPtr = false;
-    int num = 1;
-    std::unique_ptr<ExprAST> Num = std::make_unique<NumberExprAST>(1,i32);
+    std::unique_ptr<ExprAST> Num = std::make_unique<NumberExprAST>(1, i32);
     switch (tok)
     {
     case TOK_INT:
@@ -384,8 +384,7 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
         type = i64;
         break;
     default:
-        debuging
-        return LogError("未知参数类型1");
+        debuging return LogError("未知参数类型1");
     }
     if (getNextToken() == '[')
     {
@@ -393,7 +392,8 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
         isPtr = true;
         getNextToken();
         Num = ParseExpression();
-        if(CurTok != ']') return LogError("未检测到数组下标结尾");
+        if (CurTok != ']')
+            return LogError("未检测到数组下标结尾");
         CurArray.second = NumVal.second;
         getNextToken();
     }
@@ -435,8 +435,8 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
             return nullptr;
     }
     if (tok == TOK_STRING)
-        num = TMPNUM;
-    return std::make_unique<VarExprAST>(std::move(type), isPtr,std::move(Num), std::make_pair(Name, std::move(Init)));
+        Num = std::make_unique<NumberExprAST>(TMPNUM + 1, i32);
+    return std::make_unique<VarExprAST>(std::move(type), isPtr, std::move(Num), std::make_pair(Name, std::move(Init)));
 }
 
 static std::unique_ptr<ExprAST> ParseNumberExpr()
@@ -528,7 +528,7 @@ static std::unique_ptr<ExprAST> ParseQuote()
 {
     getNextToken();
     std::unique_ptr<ExprAST> expr = ParseExpression();
-    if(!expr)
+    if (!expr)
         return LogError("无变量名");
     return std::make_unique<QuoteExprAST>(std::move(expr));
 }
@@ -536,7 +536,8 @@ static std::unique_ptr<ExprAST> ParseAsterisk()
 {
     getNextToken();
     std::unique_ptr<ExprAST> expr = ParseExpression();
-    if(!expr) return LogError("无变量名");
+    if (!expr)
+        return LogError("无变量名");
     return std::make_unique<AsteriskExprAST>(std::move(expr));
 }
 static std::unique_ptr<ExprAST> ParsePrimary()
@@ -583,12 +584,14 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec, std::unique_ptr<Expr
         if (TokPrec < ExprPrec)
             return LHS;
         int BinOp = CurTok;
-        if(BinOp == '!' || BinOp == '@'){
-            if(getNextToken() != '='){
+        if (BinOp == '!' || BinOp == '@')
+        {
+            if (getNextToken() != '=')
+            {
                 return LogError("未知二元操作符");
-            } 
+            }
         }
-        
+
         getNextToken();
         auto RHS = ParsePrimary();
         if (!RHS)
@@ -684,11 +687,12 @@ Value *NumberExprAST::codegen()
 Value *VariableExprAST::codegen()
 {
     auto V = NamedValues[Name];
-    if (!V.second){
-        fprintf(stderr,"Unknow Name: %s\n",Name.c_str());
+    if (!V.second)
+    {
+        fprintf(stderr, "Unknow Name: %s\n", Name.c_str());
         return LogErrorV("未知变量名");
     }
-        
+
     switch (mType)
     {
     case LOAD:
@@ -698,12 +702,12 @@ Value *VariableExprAST::codegen()
     default:
         break;
     }
-    fprintf(stderr,"Name: %s\n",Name.c_str());
+    fprintf(stderr, "Name: %s\n", Name.c_str());
     return LogErrorV("未知存储类型");
 }
 
 Value *AssignExprAST::codegen()
-{   
+{
     auto LHS = LEFT->SetStore()->codegen();
     auto RHS = RIGHT->SetLoad()->codegen();
     if (!LHS || !RHS)
@@ -713,22 +717,26 @@ Value *AssignExprAST::codegen()
 Value *ForExprAST::codegen()
 {
     Value *StartVal = Start->codegen();
-    if(!StartVal) return nullptr;
+    if (!StartVal)
+        return nullptr;
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
     BasicBlock *PreheaderBB = Builder->GetInsertBlock();
     BasicBlock *LoopBB = BasicBlock::Create(*TheContext, "loop", TheFunction);
     Builder->CreateBr(LoopBB);
     Builder->SetInsertPoint(LoopBB);
-    if(!Body->codegen()) return nullptr;
+    if (!Body->codegen())
+        return nullptr;
     Value *StepVal = Step->codegen();
-    if(!StepVal) return nullptr;
+    if (!StepVal)
+        return nullptr;
     Value *EndCond = End->codegen();
-    if(!EndCond) End->codegen();
-    EndCond = Builder->CreateIntCast(EndCond,i32,false);
-    EndCond = Builder->CreateICmpNE(EndCond,ConstantInt::get(i32,0),"loopcond");
+    if (!EndCond)
+        End->codegen();
+    EndCond = Builder->CreateIntCast(EndCond, i32, false);
+    EndCond = Builder->CreateICmpNE(EndCond, ConstantInt::get(i32, 0), "loopcond");
     BasicBlock *LoopEndBB = Builder->GetInsertBlock();
-    BasicBlock *AfterBB = BasicBlock::Create(*TheContext,"afterloop",TheFunction);
-    Builder->CreateCondBr(EndCond,LoopBB,AfterBB);
+    BasicBlock *AfterBB = BasicBlock::Create(*TheContext, "afterloop", TheFunction);
+    Builder->CreateCondBr(EndCond, LoopBB, AfterBB);
     Builder->SetInsertPoint(AfterBB);
     return Constant::getNullValue(Type::getDoubleTy(*TheContext));
 }
@@ -736,18 +744,18 @@ Value *ForExprAST::codegen()
 Value *IfExprAST::codegen()
 {
     Value *CondV = Cond->codegen();
-    assert(CondV->getType()->getTypeID() == ConstantInt::get(i32,0)->getType()->getTypeID());
-    
-    CondV = Builder->CreateIntCast(CondV,i32,false);
-    assert(CondV->getType() == ConstantInt::get(i32,0)->getType());
-    CondV = Builder->CreateICmpNE(CondV,ConstantInt::get(i32,0),"ifcond");
-    
+    assert(CondV->getType()->getTypeID() == ConstantInt::get(i32, 0)->getType()->getTypeID());
+
+    CondV = Builder->CreateIntCast(CondV, i32, false);
+    assert(CondV->getType() == ConstantInt::get(i32, 0)->getType());
+    CondV = Builder->CreateICmpNE(CondV, ConstantInt::get(i32, 0), "ifcond");
+
     BasicBlock *MainBB = Builder->GetInsertBlock();
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
-    BasicBlock *ThenBB = BasicBlock::Create(*TheContext, "Then",TheFunction);
-    BasicBlock *ElseBB= BasicBlock::Create(*TheContext, "Else");
+    BasicBlock *ThenBB = BasicBlock::Create(*TheContext, "Then", TheFunction);
+    BasicBlock *ElseBB = BasicBlock::Create(*TheContext, "Else");
     BasicBlock *MergeBB = BasicBlock::Create(*TheContext, "MergeBB");
-    Builder->CreateCondBr(CondV,ThenBB,ElseBB);
+    Builder->CreateCondBr(CondV, ThenBB, ElseBB);
     Builder->SetInsertPoint(ThenBB);
     Value *ThenV = Then->codegen();
     Builder->CreateBr(MergeBB);
@@ -757,12 +765,11 @@ Value *IfExprAST::codegen()
     Value *ElseV = Else->codegen();
     Builder->CreateBr(MergeBB);
 
-
     TheFunction->getBasicBlockList().push_back(MergeBB);
     Builder->SetInsertPoint(MergeBB);
-    PHINode *PHI = Builder->CreatePHI(i32,2,"ifexpr");
-    PHI->addIncoming(ConstantInt::get(i32,0),ThenBB);
-    PHI->addIncoming(ConstantInt::get(i32,0),ElseBB);
+    PHINode *PHI = Builder->CreatePHI(i32, 2, "ifexpr");
+    PHI->addIncoming(ConstantInt::get(i32, 0), ThenBB);
+    PHI->addIncoming(ConstantInt::get(i32, 0), ElseBB);
     return PHI;
 }
 
@@ -785,9 +792,9 @@ Value *BinaryExprAST::codegen()
     case '>':
         return Builder->CreateICmpULT(R, L, "gecmp");
     case '!':
-        return Builder->CreateICmpNE(R,L,"necmp");
+        return Builder->CreateICmpNE(R, L, "necmp");
     case '@':
-        return Builder->CreateICmpEQ(R,L,"eqcmp");
+        return Builder->CreateICmpEQ(R, L, "eqcmp");
     default:
         return LogErrorV("未知操作符");
     }
@@ -807,9 +814,9 @@ Value *CallExprAST::codegen()
         Type *type = CalleeF->getArg(i)->getType();
         if (type->isPointerTy())
             Argvs.push_back(Args[i]->SetStore()->codegen());
-        else if (type->isArrayTy()) 
+        else if (type->isArrayTy())
             Argvs.push_back(Args[i]->SetStore()->codegen());
-        else 
+        else
             Argvs.push_back(Args[i]->SetLoad()->codegen());
         if (!Argvs.back())
             return nullptr;
@@ -825,7 +832,7 @@ Value *VarExprAST::codegen()
     Value *arraySize = Num->codegen();
     AllocaInst *Alloca = TmpB.CreateAlloca(type, arraySize, VarNames.first);
     NamedValues[VarNames.first] = std::make_pair(type, Alloca);
-    fprintf(stderr,"Name Put: %s\n",VarNames.first.c_str());
+    fprintf(stderr, "Name Put: %s\n", VarNames.first.c_str());
     Value *val = VarNames.second->SetLoad()->codegen();
     return Builder->CreateStore(val, Alloca);
 }
@@ -845,7 +852,7 @@ Function *FunctionAST::codegen()
         IRBuilder<> TmpB(&function->getEntryBlock(),
                          function->getEntryBlock().begin());
         AllocaInst *Alloca = TmpB.CreateAlloca(arg.getType(), nullptr, arg.getName());
-        Builder->CreateStore(&arg,Alloca);
+        Builder->CreateStore(&arg, Alloca);
         NamedValues[std::string(arg.getName())] = std::make_pair(arg.getType(), Alloca);
     }
     Value *ret = Body->codegen();
@@ -861,7 +868,8 @@ Value *BodyExprAST::codegen()
     {
         val = expr->codegen();
     }
-    if(!val)val = ConstantInt::get(i32,0);
+    if (!val)
+        val = ConstantInt::get(i32, 0);
     return val;
 }
 // :"Literal here"
@@ -887,9 +895,10 @@ Value *ArrayExprAST::codegen()
 Value *PointerExprAST::codegen()
 {
     auto V = NamedValues[Name];
-    
+
     Value *index = Index->SetLoad()->codegen();
-    if(!index) return nullptr;
+    if (!index)
+        return nullptr;
     Value *ret;
     auto arrVal = Builder->CreateInBoundsGEP(V.second, index);
     switch (mType)
@@ -906,8 +915,9 @@ Value *PointerExprAST::codegen()
     return ret;
 }
 
-Value* AsteriskExprAST::codegen(){
-    Value * ret;
+Value *AsteriskExprAST::codegen()
+{
+    Value *ret;
     switch (mType)
     {
     case STORE:
@@ -920,7 +930,8 @@ Value* AsteriskExprAST::codegen(){
     }
     return ret;
 }
-Value* QuoteExprAST::codegen(){
+Value *QuoteExprAST::codegen()
+{
     return Operand->SetStore()->codegen();
 }
 
@@ -1016,7 +1027,7 @@ int main(int argc, char **argv)
         return 1;
     }
     TheModule->print(errs(), nullptr);
-    
+
     auto Module = TheModule.get();
     pass.run(*Module);
     dest.flush();

@@ -1,0 +1,17 @@
+extern write(int,string,int) int
+extern read(int,string,int) int
+extern open(string,int) int
+function entry(int argc) int{
+    string buffer = "                    "
+    string say = "Please Input your Name: "
+    string hello = "\nHello: "
+    
+    write(1,say,23)
+    read(0,buffer,20)
+    write(1,hello,9)
+    write(1,buffer,20)
+
+    string file = "file"
+    int fd = open(file,1024)
+    write(fd,buffer,20)
+}

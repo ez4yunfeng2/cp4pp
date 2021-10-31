@@ -33,8 +33,10 @@
 using namespace llvm;
 namespace cp4pp
 {
-    enum MemType{
-        LOAD,STORE
+    enum MemType
+    {
+        LOAD,
+        STORE
     };
     enum Token
     {
@@ -59,11 +61,13 @@ namespace cp4pp
         virtual ~ExprAST() = default;
         virtual Value *codegen() = 0;
         virtual void print() = 0;
-        ExprAST *SetLoad(){
+        ExprAST *SetLoad()
+        {
             mType = LOAD;
             return this;
         }
-        ExprAST *SetStore(){
+        ExprAST *SetStore()
+        {
             mType = STORE;
             return this;
         }
@@ -72,8 +76,9 @@ namespace cp4pp
     {
         int Val;
         Type *type;
+
     public:
-        NumberExprAST(int Val,Type * type) : Val(Val),type(type) {}
+        NumberExprAST(int Val, Type *type) : Val(Val), type(type) {}
         Value *codegen() override;
         void print() override
         {
@@ -100,14 +105,16 @@ namespace cp4pp
         Type *type;
         int num;
         std::vector<int> Vals;
-        ArrayExprAST(std::vector<int> Vals, Type *type, int num):Vals(Vals), type(type), num(num){};
+        ArrayExprAST(std::vector<int> Vals, Type *type, int num) : Vals(Vals), type(type), num(num){};
         Value *codegen() override;
-        void print() override{
-            fprintf(stderr,"Array[ ");
-            for(auto i:Vals){
-                fprintf(stderr,"%d ",i);
+        void print() override
+        {
+            fprintf(stderr, "Array[ ");
+            for (auto i : Vals)
+            {
+                fprintf(stderr, "%d ", i);
             }
-            fprintf(stderr,"]\n");
+            fprintf(stderr, "]\n");
         };
     };
     class PointerExprAST : public ExprAST
@@ -117,8 +124,9 @@ namespace cp4pp
         std::unique_ptr<ExprAST> Index;
         PointerExprAST(std::string Name, std::unique_ptr<ExprAST> Index) : Name(Name), Index(std::move(Index)){};
         Value *codegen() override;
-        void print() override{
-            fprintf(stderr,"Pointer[ %s  ]\n",Name.c_str());
+        void print() override
+        {
+            fprintf(stderr, "Pointer[ %s  ]\n", Name.c_str());
             Index->print();
         };
     };
@@ -138,8 +146,9 @@ namespace cp4pp
     {
         std::unique_ptr<ExprAST> Operand;
         Value *codegen() override;
-        public:
-        AsteriskExprAST(std::unique_ptr<ExprAST> Operand):Operand(std::move(Operand)){};
+
+    public:
+        AsteriskExprAST(std::unique_ptr<ExprAST> Operand) : Operand(std::move(Operand)){};
         void print() override
         {
             fprintf(stderr, "Asterisk[");
@@ -151,8 +160,9 @@ namespace cp4pp
     {
         std::unique_ptr<ExprAST> Operand;
         Value *codegen() override;
-        public:
-        QuoteExprAST(std::unique_ptr<ExprAST> Operand):Operand(std::move(Operand)){};
+
+    public:
+        QuoteExprAST(std::unique_ptr<ExprAST> Operand) : Operand(std::move(Operand)){};
         void print() override
         {
             fprintf(stderr, "Quote[");
@@ -270,9 +280,9 @@ namespace cp4pp
         std::pair<std::string, std::unique_ptr<ExprAST>> VarNames;
 
     public:
-        VarExprAST(Type *type,bool isPtr,std::unique_ptr<ExprAST> Num,
+        VarExprAST(Type *type, bool isPtr, std::unique_ptr<ExprAST> Num,
                    std::pair<std::string, std::unique_ptr<ExprAST>> VarNames)
-            : type(type),isPtr(isPtr),Num(std::move(Num)), VarNames(std::move(VarNames)) {}
+            : type(type), isPtr(isPtr), Num(std::move(Num)), VarNames(std::move(VarNames)) {}
         Value *codegen() override;
         void print() override
         {
@@ -285,20 +295,19 @@ namespace cp4pp
     public:
         std::unique_ptr<ExprAST> LEFT;
         std::unique_ptr<ExprAST> RIGHT;
+
     public:
-        AssignExprAST(std::unique_ptr<ExprAST> LEFT,std::unique_ptr<ExprAST> RIGHT)
-            : LEFT(std::move(LEFT)),RIGHT(std::move(RIGHT)){};
+        AssignExprAST(std::unique_ptr<ExprAST> LEFT, std::unique_ptr<ExprAST> RIGHT)
+            : LEFT(std::move(LEFT)), RIGHT(std::move(RIGHT)){};
         Value *codegen() override;
         void print() override
         {
-            fprintf(stderr,"Assign: [");
+            fprintf(stderr, "Assign: [");
             LEFT->print();
             RIGHT->print();
-            fprintf(stderr,"]\n");
+            fprintf(stderr, "]\n");
         };
     };
-
-    
 
     class PrototypeAST
     {
@@ -309,10 +318,10 @@ namespace cp4pp
         unsigned Precedence;
 
     public:
-        PrototypeAST(const std::string &Name, std::vector<std::pair<std::string, Token>> Args, 
-            Type *type,bool IsOperator = false, unsigned Prec = 0)
+        PrototypeAST(const std::string &Name, std::vector<std::pair<std::string, Token>> Args,
+                     Type *type, bool IsOperator = false, unsigned Prec = 0)
             : Name(Name), Args(std::move(Args)), IsOperator(IsOperator),
-              Precedence(Prec), type(type){}
+              Precedence(Prec), type(type) {}
 
         Function *codegen();
         const std::string &getName() const { return Name; }
