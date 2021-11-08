@@ -1,6 +1,0 @@
-extern write(int,string,int) int
-extern read(int,string,int) int
-function entry() int {
-    string input = "Please input your name:"
-    write(1,input,23)
-}

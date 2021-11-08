@@ -33,7 +33,6 @@
 #include <system_error>
 #include <utility>
 #include <vector>
-#define chan(c) '\\c'
 #define debuging fprintf(stderr, "CurTok: [%d]\n", CurTok);
 #define painc fprintf(stderr, "Painc !!!!!\n");
 #define isKW isKeyWord()
@@ -91,13 +90,6 @@ static int GetTok()
     if (isdigit(LastChar) || LastChar == '.')
     { // Number: [0-9.]+
         std::string NumStr;
-
-        // NumStr += LastChar;
-        // LastChar = getchar();
-        // if(isdigit(LastChar) || LastChar == '.' || LastChar & ('X' | 'x') ){
-        //     LastChar
-        // }
-
         do
         {
             NumStr += LastChar;
@@ -481,7 +473,6 @@ static std::unique_ptr<BodyExprAST> ParseBodyExpr()
     getNextToken();
     return std::make_unique<BodyExprAST>(std::move(bodys));
 }
-
 static std::unique_ptr<ExprAST> ParseIfExpr()
 {
     getNextToken();
@@ -813,7 +804,7 @@ Value *CallExprAST::codegen()
     {
         Type *type = CalleeF->getArg(i)->getType();
         if(type == i8ptr){
-            Argvs.push_back(Args[i]->SetLoad()->codegen());
+            Argvs.push_back(Args[i]->SetStore()->codegen());
         }else if (type->isPointerTy())
             Argvs.push_back(Args[i]->SetStore()->codegen());
         else if (type->isArrayTy())

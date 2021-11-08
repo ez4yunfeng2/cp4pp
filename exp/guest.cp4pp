@@ -1,0 +1,53 @@
+extern write(int,string,int) int
+extern open(string,int) int
+extern read(int,string,int) int
+function entry() int {
+    string success = "congratulate!"
+    string fail = "You failed!"
+    string Small = "Too Small\n"
+    string Big   = "Too Big\n"
+    string msg = "Please Input A Number(1 - 99): "
+    string buffer = "          "
+    string file = "/dev/urandom"
+    string tmp = " "
+    int i = 0
+    int len = 0
+    char tmp = 0
+    int fd = open(file,0)
+    read(fd,tmp,1)
+    char num = tmp[0]
+    for 1; num > 100:1 ; 1{
+        num = num - 100
+    }
+    
+    for i = 0;i < 10;i = i + 1{
+        write(1,msg,31)
+        len = read(0,buffer,10)
+        if len @= 3 {
+            tmp = (buffer[0] - '0') * 10 + buffer[1] - '0'
+        } else {
+            tmp = buffer[0] - '0'
+        }
+        if tmp @= num {
+            i = 99
+        } else {
+            1
+        }
+        if tmp < num {
+             write(1,Small,10)
+        } else {
+            1
+        }
+        if tmp > num {
+            write(1,Big,8)
+        } else {
+            1
+        }
+    }
+    if i @= 100 {
+        write(1,success,13)
+    } else {
+        write(1,fail,11)
+    }
+    num
+}
