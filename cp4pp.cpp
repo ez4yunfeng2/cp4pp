@@ -812,7 +812,9 @@ Value *CallExprAST::codegen()
     for (unsigned i = 0, e = Args.size(); i != e; ++i)
     {
         Type *type = CalleeF->getArg(i)->getType();
-        if (type->isPointerTy())
+        if(type == i8ptr){
+            Argvs.push_back(Args[i]->SetLoad()->codegen());
+        }else if (type->isPointerTy())
             Argvs.push_back(Args[i]->SetStore()->codegen());
         else if (type->isArrayTy())
             Argvs.push_back(Args[i]->SetStore()->codegen());

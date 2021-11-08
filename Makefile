@@ -6,7 +6,7 @@ all:
 	@clang++ main.cpp output.o -o main
 	@./main
 
-cmpl:
+exec:
 	@./cp4pp $(file)
 	@clang++ main.cpp output.o -o main
 	@./main

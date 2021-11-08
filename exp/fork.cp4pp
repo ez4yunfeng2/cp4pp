@@ -1,0 +1,41 @@
+extern write(int,string,int) int
+extern read(int,string,int) int
+extern close(int) int
+extern open(string,int) int
+extern fork() int
+extern time(int) int
+function sleep(int gap) int {
+    int end = time(0) + gap
+    int tmp = 0
+    for tmp = 0;tmp < end;tmp = tmp {
+        tmp = time(0)
+    }
+}
+function testA() int {
+    int end = time(0) + 1
+    int tmp = 0
+    for 1;tmp < end;1 {
+        tmp = time(0)
+    }
+    char ch = 'A'
+    write(1,ch,1)
+    testA()
+}
+function testB() int {
+    int end = time(0) + 1
+    int tmp = 0
+    for 1;tmp < end;1 {
+        tmp = time(0)
+    }
+    char ch = 'B'
+    write(1,ch,1)
+    testB()
+}
+function entry(int argc) int {
+    int pid = fork()
+    if pid @= 0 {
+        testA()
+    } else {
+        testB()
+    }
+}

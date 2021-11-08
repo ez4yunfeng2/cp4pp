@@ -1,0 +1,9 @@
+extern write(int,string,int) int
+function strlen(string msg) int {
+    int i = 1
+    char ch = 1
+    msg[0] = 'F'
+}
+function entry() int {
+    
+}
